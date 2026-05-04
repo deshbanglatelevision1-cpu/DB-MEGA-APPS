@@ -12,6 +12,7 @@ export interface YouTubeVideo {
   likeCount?: string;
   commentCount?: string;
   isShort?: boolean;
+  duration?: string;
 }
 
 export interface YouTubeResponse {
@@ -40,7 +41,7 @@ export async function searchVideos(query: string, pageToken?: string): Promise<Y
 
     const videoIds = items.map((item: any) => item.id.videoId).join(',');
     const statsResponse = await fetch(
-      `${BASE_URL}/videos?part=statistics,snippet&id=${videoIds}&key=${YOUTUBE_API_KEY}`
+      `${BASE_URL}/videos?part=statistics,snippet,contentDetails&id=${videoIds}&key=${YOUTUBE_API_KEY}`
     );
     const statsData = await statsResponse.json();
 
@@ -54,6 +55,7 @@ export async function searchVideos(query: string, pageToken?: string): Promise<Y
       viewCount: item.statistics.viewCount,
       likeCount: item.statistics.likeCount,
       commentCount: item.statistics.commentCount,
+      duration: formatYouTubeDuration(item.contentDetails.duration),
     }));
 
     return { videos, nextPageToken: data.nextPageToken };
@@ -78,7 +80,7 @@ export async function getTrendingVideos(pageToken?: string, regionCode?: string,
     }
 
     const response = await fetch(
-      `${BASE_URL}/videos?part=snippet,statistics&chart=mostPopular&maxResults=50&regionCode=${region}&key=${YOUTUBE_API_KEY}${pageParam}${categoryParam}`,
+      `${BASE_URL}/videos?part=snippet,statistics,contentDetails&chart=mostPopular&maxResults=50&regionCode=${region}&key=${YOUTUBE_API_KEY}${pageParam}${categoryParam}`,
       { method: 'GET', mode: 'cors' }
     );
 
@@ -103,6 +105,7 @@ export async function getTrendingVideos(pageToken?: string, regionCode?: string,
       viewCount: item.statistics.viewCount,
       likeCount: item.statistics.likeCount,
       commentCount: item.statistics.commentCount,
+      duration: formatYouTubeDuration(item.contentDetails.duration),
     }));
 
     return { videos, nextPageToken: data.nextPageToken, region };
@@ -124,18 +127,28 @@ export async function getRelatedVideos(videoId: string, pageToken?: string): Pro
     );
     const data = await response.json();
 
-    if (data.error) {
+    if (data.error || !data.items) {
       console.warn("Related videos API failed.");
       return { videos: [] };
     }
 
-    const videos = data.items.map((item: any) => ({
-      id: item.id.videoId,
+    const videoIds = data.items.map((item: any) => item.id.videoId).join(',');
+    const statsResponse = await fetch(
+      `${BASE_URL}/videos?part=statistics,snippet,contentDetails&id=${videoIds}&key=${YOUTUBE_API_KEY}`
+    );
+    const statsData = await statsResponse.json();
+
+    const videos = statsData.items.map((item: any) => ({
+      id: item.id,
       title: item.snippet.title,
       thumbnail: item.snippet.thumbnails.high.url,
       channelTitle: item.snippet.channelTitle,
       publishedAt: item.snippet.publishedAt,
       description: item.snippet.description,
+      viewCount: item.statistics.viewCount,
+      likeCount: item.statistics.likeCount,
+      commentCount: item.statistics.commentCount,
+      duration: formatYouTubeDuration(item.contentDetails.duration),
     }));
 
     return { videos, nextPageToken: data.nextPageToken };
@@ -186,7 +199,7 @@ export async function getShorts(pageToken?: string): Promise<YouTubeResponse> {
 
     const videoIds = items.map((item: any) => item.id.videoId).join(',');
     const statsResponse = await fetch(
-      `${BASE_URL}/videos?part=statistics,snippet&id=${videoIds}&key=${YOUTUBE_API_KEY}`
+      `${BASE_URL}/videos?part=statistics,snippet,contentDetails&id=${videoIds}&key=${YOUTUBE_API_KEY}`
     );
     const statsData = await statsResponse.json();
 
@@ -200,6 +213,7 @@ export async function getShorts(pageToken?: string): Promise<YouTubeResponse> {
       viewCount: item.statistics.viewCount,
       likeCount: item.statistics.likeCount,
       commentCount: item.statistics.commentCount,
+      duration: formatYouTubeDuration(item.contentDetails.duration),
       isShort: true,
     }));
 
@@ -225,4 +239,18 @@ export async function getSearchSuggestions(query: string): Promise<string[]> {
     console.error("Suggestions fetch error:", error);
     return [];
   }
+}
+
+function formatYouTubeDuration(duration: string): string {
+  const match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
+  if (!match) return "0:00";
+
+  const hours = (parseInt(match[1]) || 0);
+  const minutes = (parseInt(match[2]) || 0);
+  const seconds = (parseInt(match[3]) || 0);
+
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  }
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }

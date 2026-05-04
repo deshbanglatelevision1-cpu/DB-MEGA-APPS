@@ -76,9 +76,16 @@ export default function VideoCard({ video, onClick, onShare }: VideoCardProps) {
           </div>
         </div>
         
-        {/* Play indicator */}
-        <div className="absolute bottom-2 right-2 md:hidden p-1.5 bg-black/60 backdrop-blur-md rounded-lg">
-          <Play className="w-4 h-4 text-white fill-current" />
+        {/* Play indicator & Duration */}
+        <div className="absolute bottom-2 right-2 flex items-center gap-2">
+          {video.duration && (
+            <div className="px-1.5 py-0.5 bg-black/70 backdrop-blur-md rounded text-[10px] font-bold text-white shadow-lg border border-white/10">
+              {video.duration}
+            </div>
+          )}
+          <div className="md:hidden p-1.5 bg-black/60 backdrop-blur-md rounded-lg">
+            <Play className="w-4 h-4 text-white fill-current" />
+          </div>
         </div>
 
         {/* Top Controls */}

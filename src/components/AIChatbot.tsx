@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageSquare, X, Send, Bot, User, Loader2, Globe, Sparkles, Maximize2, Minimize2 } from 'lucide-react';
+import { MessageSquare, X, Send, Bot, User, Loader2, Globe, Sparkles, Maximize2, Minimize2, Trash2, Square } from 'lucide-react';
 import { chatWithAI, ChatMessage } from '../services/aiService';
 import { cn } from '../lib/utils';
 
@@ -10,6 +10,7 @@ export default function AIChatbot() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -29,18 +30,38 @@ export default function AIChatbot() {
     setInput('');
     setIsLoading(true);
 
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     try {
-      const response = await chatWithAI([...messages, userMessage]);
+      const response = await chatWithAI([...messages, userMessage], controller.signal);
       const aiMessage: ChatMessage = { role: 'model', text: response };
       setMessages(prev => [...prev, aiMessage]);
-    } catch (error) {
-      console.error("Chat Error:", error);
-      setMessages(prev => [...prev, { 
-        role: 'model', 
-        text: "Sorry, I'm having trouble connecting right now. Please check if your GEMINI_API_KEY is configured." 
-      }]);
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.log('Chat aborted');
+      } else {
+        console.error("Chat Error:", error);
+        setMessages(prev => [...prev, { 
+          role: 'model', 
+          text: "Sorry, I'm having trouble connecting right now. Please check if your GEMINI_API_KEY is configured." 
+        }]);
+      }
     } finally {
       setIsLoading(false);
+      abortControllerRef.current = null;
+    }
+  };
+
+  const stopGenerating = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+  };
+
+  const clearHistory = () => {
+    if (window.confirm('Are you sure you want to clear the chat history?')) {
+      setMessages([]);
     }
   };
 
@@ -94,6 +115,17 @@ export default function AIChatbot() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <button 
+                onClick={clearHistory}
+                className={cn(
+                  "p-2 hover:bg-white/10 rounded-full transition-colors text-white",
+                  messages.length === 0 && "opacity-50 cursor-not-allowed"
+                )}
+                disabled={messages.length === 0}
+                title="Clear Chat"
+              >
+                <Trash2 className="w-5 h-5" />
+              </button>
               <button 
                 onClick={() => setIsMaximized(!isMaximized)}
                 className="p-2 hover:bg-white/10 rounded-full transition-colors text-white"
@@ -167,6 +199,17 @@ export default function AIChatbot() {
                   </div>
                   <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Thinking...</span>
                 </div>
+              </div>
+            )}
+            {isLoading && (
+              <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-10">
+                <button
+                  onClick={stopGenerating}
+                  className="px-4 py-2 bg-white border border-stone-200 rounded-full shadow-lg flex items-center gap-2 text-rose-500 font-bold text-xs hover:bg-rose-50 transition-colors"
+                >
+                  <Square className="w-3 h-3 fill-current" />
+                  Stop Generating
+                </button>
               </div>
             )}
             <div ref={messagesEndRef} />

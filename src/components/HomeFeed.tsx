@@ -31,6 +31,8 @@ interface ShortsPlayerItemProps {
 
 function ShortsPlayerItem({ video, isLast, lastVideoElementRef, onShare, onNext, onPrev, isFirst }: ShortsPlayerItemProps) {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [hasBeenVisible, setHasBeenVisible] = useState(false);
+  const [isReady, setIsReady] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<any>(null);
@@ -42,11 +44,9 @@ function ShortsPlayerItem({ video, isLast, lastVideoElementRef, onShare, onNext,
       (entries) => {
         if (entries[0].isIntersecting) {
           setIsPlaying(true);
+          setHasBeenVisible(true);
         } else {
           setIsPlaying(false);
-          if (playerRef.current) {
-            playerRef.current.pauseVideo();
-          }
         }
       },
       { 
@@ -61,8 +61,19 @@ function ShortsPlayerItem({ video, isLast, lastVideoElementRef, onShare, onNext,
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    if (playerRef.current && isReady) {
+      if (isPlaying) {
+        playerRef.current.playVideo();
+      } else {
+        playerRef.current.pauseVideo();
+      }
+    }
+  }, [isPlaying, isReady]);
+
   const onReady: YouTubeProps['onReady'] = (event) => {
     playerRef.current = event.target;
+    setIsReady(true);
     if (isPlaying) {
       event.target.playVideo();
     }
@@ -94,7 +105,7 @@ function ShortsPlayerItem({ video, isLast, lastVideoElementRef, onShare, onNext,
 
   useEffect(() => {
     let interval: any;
-    if (isPlaying && playerRef.current) {
+    if (isPlaying && playerRef.current && isReady) {
       interval = setInterval(() => {
         const currentTime = playerRef.current.getCurrentTime();
         const duration = playerRef.current.getDuration();
@@ -106,7 +117,7 @@ function ShortsPlayerItem({ video, isLast, lastVideoElementRef, onShare, onNext,
       clearInterval(interval);
     }
     return () => clearInterval(interval);
-  }, [isPlaying]);
+  }, [isPlaying, isReady]);
 
   const handleToggleMute = () => {
     if (playerRef.current) {
@@ -132,6 +143,7 @@ function ShortsPlayerItem({ video, isLast, lastVideoElementRef, onShare, onNext,
       rel: 0,
       showinfo: 0,
       iv_load_policy: 3,
+      cc_load_policy: 1,
       fs: 0,
       disablekb: 1,
       playsinline: 1,
@@ -151,27 +163,31 @@ function ShortsPlayerItem({ video, isLast, lastVideoElementRef, onShare, onNext,
         onClick={handleToggleMute}
         className="relative w-full h-full max-w-[min(100vw,calc((100vh-96px)*9/16))] aspect-[9/16] overflow-hidden group bg-black flex items-center justify-center cursor-pointer"
       >
-        {isPlaying ? (
+        {hasBeenVisible && (
           <YouTube 
             videoId={video.id} 
             opts={opts} 
             onReady={onReady}
             onEnd={handleEnd}
             onError={onError}
-            className="w-full h-full"
-            containerClassName="w-full h-full"
+            className={cn("w-full h-full transition-opacity duration-300", !isReady ? "opacity-0" : "opacity-100")}
+            containerClassName="w-full h-full absolute inset-0"
           />
-        ) : (
-          <div className="relative w-full h-full">
+        )}
+        
+        {!isReady && (
+          <div className="absolute inset-0 w-full h-full">
             <img 
               src={video.thumbnail} 
               alt={video.title} 
               className="w-full h-full object-cover opacity-60"
               referrerPolicy="no-referrer"
             />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Loader2 className="w-12 h-12 text-white/20 animate-spin" />
-            </div>
+            {hasBeenVisible && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Loader2 className="w-12 h-12 text-white/20 animate-spin" />
+              </div>
+            )}
           </div>
         )}
         

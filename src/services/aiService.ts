@@ -3,12 +3,13 @@ export interface ChatMessage {
   text: string;
 }
 
-export async function chatWithAI(messages: ChatMessage[]) {
+export async function chatWithAI(messages: ChatMessage[], signal?: AbortSignal) {
   try {
     const response = await fetch('/api/ai/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages })
+      body: JSON.stringify({ messages }),
+      signal
     });
     
     if (!response.ok) throw new Error('AI Chat failed');
