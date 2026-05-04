@@ -56,13 +56,13 @@ export default function VideoCard({ video, onClick, onShare }: VideoCardProps) {
   return (
     <div 
       onClick={handleClick}
-      className="group cursor-pointer bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:border-emerald-500/30 active:scale-[0.98] transition-all duration-300 border border-stone-100 relative h-full flex flex-col"
+      className="group cursor-pointer bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:shadow-emerald-900/5 hover:border-emerald-500/30 active:scale-[0.98] transition-all duration-500 border border-stone-100 relative h-full flex flex-col"
     >
       <div className="relative aspect-video overflow-hidden bg-stone-100">
         <img 
           src={video.thumbnail} 
           alt={video.title} 
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
+          className="w-full h-full object-cover group-hover:scale-110 group-hover:brightness-110 transition-all duration-700 ease-out"
           referrerPolicy="no-referrer"
           loading="lazy"
         />
