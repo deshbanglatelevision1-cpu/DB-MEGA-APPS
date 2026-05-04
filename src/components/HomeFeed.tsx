@@ -21,10 +21,13 @@ interface ShortsPlayerItemProps {
   isLast: boolean;
   lastVideoElementRef: (node: HTMLDivElement | null) => void;
   onShare: (e: React.MouseEvent, video: YouTubeVideo) => void;
+  onNext?: () => void;
+  onPrev?: () => void;
+  isFirst?: boolean;
   key?: string | number;
 }
 
-function ShortsPlayerItem({ video, isLast, lastVideoElementRef, onShare }: ShortsPlayerItemProps) {
+function ShortsPlayerItem({ video, isLast, lastVideoElementRef, onShare, onNext, onPrev, isFirst }: ShortsPlayerItemProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -43,7 +46,7 @@ function ShortsPlayerItem({ video, isLast, lastVideoElementRef, onShare }: Short
         }
       },
       { 
-        threshold: 0.7,
+        threshold: 0.6,
       }
     );
 
@@ -63,6 +66,14 @@ function ShortsPlayerItem({ video, isLast, lastVideoElementRef, onShare }: Short
 
   const onError: YouTubeProps['onError'] = (event) => {
     console.error("Shorts playback error:", event.data);
+  };
+
+  const handleEnd = () => {
+    if (onNext) {
+      onNext();
+    } else if (playerRef.current) {
+      playerRef.current.playVideo(); // Loop if no next
+    }
   };
 
   const [progress, setProgress] = useState(0);
@@ -131,7 +142,7 @@ function ShortsPlayerItem({ video, isLast, lastVideoElementRef, onShare }: Short
             videoId={video.id} 
             opts={opts} 
             onReady={onReady}
-            onEnd={(e) => e.target.playVideo()} // Ensure looping
+            onEnd={handleEnd}
             onError={onError}
             className="w-full h-full"
             containerClassName="w-full h-full"
@@ -171,6 +182,28 @@ function ShortsPlayerItem({ video, isLast, lastVideoElementRef, onShare }: Short
             <Zap className="w-4 h-4 fill-current" />
             Shorts
           </div>
+        </div>
+
+        {/* Navigation Buttons */}
+        <div className="absolute right-6 top-1/2 -translate-y-1/2 flex flex-col gap-4 z-40 pointer-events-auto">
+          {!isFirst && onPrev && (
+            <button 
+              onClick={(e) => { e.stopPropagation(); onPrev(); }}
+              className="p-4 bg-white/10 hover:bg-white/20 backdrop-blur-xl rounded-full text-white transition-all border border-white/10 active:scale-90"
+              title="Previous Short"
+            >
+              <TrendingUp className="w-6 h-6 -rotate-180" />
+            </button>
+          )}
+          {onNext && (
+            <button 
+              onClick={(e) => { e.stopPropagation(); onNext(); }}
+              className="p-4 bg-white/10 hover:bg-white/20 backdrop-blur-xl rounded-full text-white transition-all border border-white/10 active:scale-90"
+              title="Next Short"
+            >
+              <TrendingUp className="w-6 h-6 rotate-180" />
+            </button>
+          )}
         </div>
 
         <div className="absolute bottom-0 left-0 p-8 w-full space-y-6 pointer-events-none">
@@ -234,6 +267,28 @@ export default function HomeFeed({ onVideoSelect, searchResults, onClearSearch, 
   
   const observer = useRef<IntersectionObserver | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const handleNextShort = (currentIndex: number) => {
+    if (scrollContainerRef.current) {
+      const nextIndex = currentIndex + 1;
+      const height = scrollContainerRef.current.clientHeight;
+      scrollContainerRef.current.scrollTo({
+        top: nextIndex * height,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  const handlePrevShort = (currentIndex: number) => {
+    if (scrollContainerRef.current) {
+      const prevIndex = Math.max(0, currentIndex - 1);
+      const height = scrollContainerRef.current.clientHeight;
+      scrollContainerRef.current.scrollTo({
+        top: prevIndex * height,
+        behavior: 'smooth'
+      });
+    }
+  };
 
   const lastVideoElementRef = useCallback((node: HTMLDivElement | null) => {
     if (isLoading || isFetchingMore) return;
@@ -602,6 +657,9 @@ export default function HomeFeed({ onVideoSelect, searchResults, onClearSearch, 
                       isLast={isLast}
                       lastVideoElementRef={lastVideoElementRef}
                       onShare={handleShare}
+                      onNext={() => handleNextShort(index)}
+                      onPrev={() => handlePrevShort(index)}
+                      isFirst={index === 0}
                     />
                   );
                 }
