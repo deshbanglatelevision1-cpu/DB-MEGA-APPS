@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { YouTubeVideo } from '../services/youtube';
-import { Play, Eye, Clock, Share2, Info, X, ThumbsUp, MessageSquare } from 'lucide-react';
+import { Play, Eye, Clock, Share2, Info, X, ThumbsUp, MessageSquare, Heart } from 'lucide-react';
+import { useLikes } from '../hooks/useLikes';
+import { cn } from '../lib/utils';
 
 interface VideoCardProps {
   video: YouTubeVideo;
@@ -12,6 +14,8 @@ interface VideoCardProps {
 
 export default function VideoCard({ video, onClick, onShare }: VideoCardProps) {
   const [showInfo, setShowInfo] = useState(false);
+  const { isLiked, toggleLike } = useLikes();
+  const liked = isLiked(video.id);
 
   const formatNumber = (numStr?: string) => {
     if (!numStr) return null;
@@ -85,6 +89,22 @@ export default function VideoCard({ video, onClick, onShare }: VideoCardProps) {
             title="Video Information"
           >
             <Info className="w-4 h-4" />
+          </button>
+          <button 
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              toggleLike(video.id);
+            }}
+            className={cn(
+              "p-2 backdrop-blur-md rounded-full transition-all border border-white/10",
+              liked 
+                ? "bg-rose-500 text-white border-rose-400 shadow-lg shadow-rose-500/20" 
+                : "bg-black/40 hover:bg-rose-500 text-white"
+            )}
+            title={liked ? "Unlike" : "Like"}
+          >
+            <Heart className={cn("w-4 h-4", liked && "fill-current")} />
           </button>
           <button 
             onClick={handleShare}

@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import YouTube, { YouTubeProps } from 'react-youtube';
-import { X, Maximize, Minimize, Share2, Info, Loader2, Sparkles } from 'lucide-react';
+import { X, Maximize, Minimize, Share2, Info, Loader2, Sparkles, Heart } from 'lucide-react';
 import { YouTubeVideo, getRelatedVideos } from '../services/youtube';
 import VideoCard from './VideoCard';
 import { cn } from '../lib/utils';
+import { useLikes } from '../hooks/useLikes';
 
 interface VideoPlayerProps {
   video: YouTubeVideo | null;
@@ -15,6 +16,10 @@ interface VideoPlayerProps {
 export default function VideoPlayer({ video, onClose, onVideoSelect, onShare }: VideoPlayerProps) {
   const [relatedVideos, setRelatedVideos] = useState<YouTubeVideo[]>([]);
   const [isLoadingRelated, setIsLoadingRelated] = useState(false);
+  const { isLiked, toggleLike } = useLikes();
+  
+  if (!video) return null;
+  const liked = isLiked(video.id);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [nextPageToken, setNextPageToken] = useState<string | undefined>(undefined);
   
@@ -128,6 +133,18 @@ export default function VideoPlayer({ video, onClose, onVideoSelect, onShare }: 
                   {video.channelTitle}
                 </div>
                 <div className="flex items-center gap-4">
+                  <button 
+                    onClick={() => toggleLike(video.id)}
+                    className={cn(
+                      "flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-all backdrop-blur-md border",
+                      liked 
+                        ? "bg-rose-500 text-white border-rose-400 shadow-lg shadow-rose-500/20" 
+                        : "bg-white/5 hover:bg-rose-500 text-stone-400 hover:text-white border-white/10"
+                    )}
+                  >
+                    <Heart className={cn("w-4 h-4", liked && "fill-current")} />
+                    {liked ? 'Liked' : 'Like'}
+                  </button>
                   <button 
                     onClick={() => onShare(undefined, video)}
                     className="flex items-center gap-2 px-6 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold text-sm transition-all backdrop-blur-md border border-white/5"

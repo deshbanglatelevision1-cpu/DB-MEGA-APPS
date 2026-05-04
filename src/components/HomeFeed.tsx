@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { TrendingUp, Sparkles, Loader2, Play, Info, Search, X, RefreshCw, Zap, Share2, User, Facebook, Twitter, MessageCircle, Copy, Link as LinkIcon, ExternalLink, Eye, ThumbsUp, Linkedin, Mail, Check } from 'lucide-react';
+import { TrendingUp, Sparkles, Loader2, Play, Info, Search, X, RefreshCw, Zap, Share2, User, Facebook, Twitter, MessageCircle, Copy, Link as LinkIcon, ExternalLink, Eye, ThumbsUp, Linkedin, Mail, Check, Heart } from 'lucide-react';
 import YouTube, { YouTubeProps } from 'react-youtube';
 import PullToRefresh from 'react-simple-pull-to-refresh';
 import { getTrendingVideos, YouTubeVideo, searchVideos, getShorts, YouTubeResponse } from '../services/youtube';
 import VideoCard from './VideoCard';
 import { cn } from '../lib/utils';
+import { useLikes } from '../hooks/useLikes';
 
 interface HomeFeedProps {
   onVideoSelect: (video: YouTubeVideo) => void;
@@ -33,6 +34,8 @@ function ShortsPlayerItem({ video, isLast, lastVideoElementRef, onShare, onNext,
   const [isMuted, setIsMuted] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<any>(null);
+  const { isLiked, toggleLike } = useLikes();
+  const liked = isLiked(video.id);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -215,6 +218,18 @@ function ShortsPlayerItem({ video, isLast, lastVideoElementRef, onShare, onNext,
               <TrendingUp className="w-6 h-6 rotate-180" />
             </button>
           )}
+          <button 
+            onClick={(e) => { e.stopPropagation(); toggleLike(video.id); }}
+            className={cn(
+              "p-4 backdrop-blur-xl rounded-full transition-all border border-white/10 active:scale-90",
+              liked 
+                ? "bg-rose-500 text-white border-rose-400 shadow-lg shadow-rose-500/20" 
+                : "bg-white/10 hover:bg-rose-500 text-white"
+            )}
+            title={liked ? "Unlike" : "Like"}
+          >
+            <Heart className={cn("w-6 h-6", liked && "fill-current")} />
+          </button>
         </div>
 
         <div className="absolute bottom-0 left-0 p-8 w-full space-y-6 pointer-events-none">
