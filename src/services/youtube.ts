@@ -133,12 +133,28 @@ export async function getShorts(pageToken?: string): Promise<YouTubeResponse> {
   try {
     const pageParam = pageToken ? `&pageToken=${pageToken}` : '';
     
-    // List of topics to add variety to shorts
-    const topics = ['funny', 'gaming', 'music', 'dance', 'tech', 'cooking', 'travel', 'sports', 'art', 'nature', 'satisfying', 'diy'];
-    const randomTopic = topics[Math.floor(Math.random() * topics.length)];
-    const query = pageToken ? '%23shorts' : `%23shorts ${randomTopic}`;
+    // Heavy variety for shorts query
+    const trendingTopics = [
+      'trending', 'viral', 'popular', 'latest', 'new', 'daily', 'shorts'
+    ];
+    const nicheTopics = [
+      'funny', 'gaming', 'music', 'dance', 'tech', 'cooking', 'travel', 
+      'sports', 'art', 'nature', 'satisfying', 'diy', 'science', 
+      'history', 'facts', 'adventure', 'magic', 'animals', 'asmr',
+      'workout', 'motivation', 'lifehacks', 'comedy', 'billiards', 'football',
+      'cricket', 'minecraft', 'roblox', 'space', 'oceans', 'gadgets'
+    ];
+    
+    // Pick topics randomly with fallbacks
+    const trendTopic = trendingTopics[Math.floor(Math.random() * trendingTopics.length)] || 'shorts';
+    const nicheTopic1 = nicheTopics[Math.floor(Math.random() * nicheTopics.length)] || 'trending';
+    const nicheTopic2 = nicheTopics[Math.floor(Math.random() * nicheTopics.length)] || 'viral';
+    
+    // Construct query to maximize variety
+    const query = pageToken 
+      ? `%23shorts` 
+      : `%23shorts ${trendTopic} ${nicheTopic1} ${nicheTopic2}`;
 
-    // Searching for #shorts with short duration to get Shorts-like content
     const response = await fetch(
       `${BASE_URL}/search?part=snippet&maxResults=50&q=${encodeURIComponent(query)}&type=video&videoDuration=short&key=${YOUTUBE_API_KEY}${pageParam}`
     );
@@ -159,7 +175,10 @@ export async function getShorts(pageToken?: string): Promise<YouTubeResponse> {
       isShort: true,
     }));
 
-    return { videos, nextPageToken: data.nextPageToken };
+    // Shuffle results for extra variety on every load
+    const shuffledVideos = videos.sort(() => Math.random() - 0.5);
+
+    return { videos: shuffledVideos, nextPageToken: data.nextPageToken };
   } catch (error) {
     console.error("Shorts fetch error:", error);
     return { videos: [] };
@@ -168,19 +187,12 @@ export async function getShorts(pageToken?: string): Promise<YouTubeResponse> {
 
 export async function getSearchSuggestions(query: string): Promise<string[]> {
   try {
-    // Note: YouTube doesn't have a public official autocomplete API without OAuth, 
-    // but there's a common workaround using Google's suggestions endpoint.
     const response = await fetch(
-      `https://suggestqueries.google.com/complete/search?client=youtube&ds=yt&q=${encodeURIComponent(query)}`
+      `/api/suggestions?q=${encodeURIComponent(query)}`
     );
-    const text = await response.text();
-    // The response is in a format like window.google.ac.h(["query",[["suggestion1",0],["suggestion2",0]]])
-    const match = text.match(/\["(.+?)",\[(.*?)\]\]/);
-    if (match && match[2]) {
-      const suggestions = JSON.parse(`[${match[2]}]`).map((s: any) => s[0]);
-      return suggestions;
-    }
-    return [];
+    if (!response.ok) return [];
+    const suggestions = await response.json();
+    return suggestions;
   } catch (error) {
     console.error("Suggestions fetch error:", error);
     return [];

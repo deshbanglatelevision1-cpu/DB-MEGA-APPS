@@ -26,6 +26,7 @@ interface ShortsPlayerItemProps {
 
 function ShortsPlayerItem({ video, isLast, lastVideoElementRef, onShare }: ShortsPlayerItemProps) {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<any>(null);
 
@@ -34,10 +35,6 @@ function ShortsPlayerItem({ video, isLast, lastVideoElementRef, onShare }: Short
       (entries) => {
         if (entries[0].isIntersecting) {
           setIsPlaying(true);
-          // Try to play if player is ready
-          if (playerRef.current) {
-            playerRef.current.playVideo();
-          }
         } else {
           setIsPlaying(false);
           if (playerRef.current) {
@@ -46,8 +43,7 @@ function ShortsPlayerItem({ video, isLast, lastVideoElementRef, onShare }: Short
         }
       },
       { 
-        threshold: 0.6,
-        // Use the viewport as root since the container is almost full screen
+        threshold: 0.7,
       }
     );
 
@@ -62,6 +58,40 @@ function ShortsPlayerItem({ video, isLast, lastVideoElementRef, onShare }: Short
     playerRef.current = event.target;
     if (isPlaying) {
       event.target.playVideo();
+    }
+  };
+
+  const onError: YouTubeProps['onError'] = (event) => {
+    console.error("Shorts playback error:", event.data);
+  };
+
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    let interval: any;
+    if (isPlaying && playerRef.current) {
+      interval = setInterval(() => {
+        const currentTime = playerRef.current.getCurrentTime();
+        const duration = playerRef.current.getDuration();
+        if (duration > 0) {
+          setProgress((currentTime / duration) * 100);
+        }
+      }, 1000);
+    } else {
+      clearInterval(interval);
+    }
+    return () => clearInterval(interval);
+  }, [isPlaying]);
+
+  const handleToggleMute = () => {
+    if (playerRef.current) {
+      if (isMuted) {
+        playerRef.current.unMute();
+        setIsMuted(false);
+      } else {
+        playerRef.current.mute();
+        setIsMuted(true);
+      }
     }
   };
 
@@ -80,6 +110,7 @@ function ShortsPlayerItem({ video, isLast, lastVideoElementRef, onShare }: Short
       fs: 0,
       disablekb: 1,
       playsinline: 1,
+      mute: 1, // Start muted for autoplay reliability
     },
   };
 
@@ -89,14 +120,19 @@ function ShortsPlayerItem({ video, isLast, lastVideoElementRef, onShare }: Short
         if (isLast) lastVideoElementRef(node);
         (containerRef as any).current = node;
       }}
-      className="relative w-full h-[calc(100vh-96px)] snap-start flex flex-col items-center justify-center p-0 bg-stone-950"
+      className="relative w-full h-[calc(100vh-96px)] snap-start snap-always flex flex-col items-center justify-center p-0 bg-black overflow-hidden"
     >
-      <div className="relative h-full aspect-[9/16] max-h-full overflow-hidden group shadow-2xl bg-black flex items-center justify-center">
+      <div 
+        onClick={handleToggleMute}
+        className="relative w-full h-full max-w-[min(100vw,calc((100vh-96px)*9/16))] aspect-[9/16] overflow-hidden group bg-black flex items-center justify-center cursor-pointer"
+      >
         {isPlaying ? (
           <YouTube 
             videoId={video.id} 
             opts={opts} 
             onReady={onReady}
+            onEnd={(e) => e.target.playVideo()} // Ensure looping
+            onError={onError}
             className="w-full h-full"
             containerClassName="w-full h-full"
           />
@@ -114,6 +150,20 @@ function ShortsPlayerItem({ video, isLast, lastVideoElementRef, onShare }: Short
           </div>
         )}
         
+        {isMuted && isPlaying && (
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/40 backdrop-blur-md px-4 py-2 rounded-full text-white text-[10px] font-bold uppercase tracking-widest pointer-events-none animate-pulse">
+            Tap to Unmute
+          </div>
+        )}
+        
+        {/* Progress Bar */}
+        <div className="absolute bottom-0 left-0 w-full h-1 bg-white/10">
+          <div 
+            className="h-full bg-rose-600 transition-all duration-300 ease-linear"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 pointer-events-none" />
         
         <div className="absolute top-6 left-6 pointer-events-none">
@@ -200,9 +250,9 @@ export default function HomeFeed({ onVideoSelect, searchResults, onClearSearch, 
         }
       }
     }, { 
-      threshold: 0.1,
+      threshold: 0,
       root: activeTab === 'shorts' ? scrollContainerRef.current : null,
-      rootMargin: '1200px'
+      rootMargin: '400px'
     });
     
     if (node) observer.current.observe(node);
@@ -533,15 +583,15 @@ export default function HomeFeed({ onVideoSelect, searchResults, onClearSearch, 
                 </div>
               </div>
               
-              <div 
-              ref={activeTab === 'shorts' ? scrollContainerRef : null}
-              className={cn(
-                "grid gap-8 pb-32",
-                activeTab === 'shorts' 
-                  ? "flex flex-col items-center gap-0 snap-y snap-mandatory h-[calc(100vh-96px)] overflow-y-auto overflow-x-hidden no-scrollbar bg-stone-950" 
-                  : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
-              )}
-            >
+      <div 
+        ref={activeTab === 'shorts' ? scrollContainerRef : null}
+        className={cn(
+          "grid gap-8 pb-32",
+          activeTab === 'shorts' 
+            ? "flex flex-col items-center gap-0 snap-y snap-mandatory h-[calc(100vh-96px)] overflow-y-auto overflow-x-hidden no-scrollbar bg-black -mx-6" 
+            : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
+        )}
+      >
               {videosToDisplay.map((video, index) => {
                 const isLast = videosToDisplay.length === index + 1;
                 if (activeTab === 'shorts') {

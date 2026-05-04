@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import HomeFeed from './components/HomeFeed';
 import BottomSearchBar from './components/BottomSearchBar';
 import VideoPlayer from './components/VideoPlayer';
+import AIChatbot from './components/AIChatbot';
 import { YouTubeVideo, searchVideos, YOUTUBE_API_KEY } from './services/youtube';
 import { Play, Sparkles, User, Settings, Info, Menu, X, Bell, TrendingUp, Zap } from 'lucide-react';
 import { cn } from './lib/utils';
@@ -172,6 +173,8 @@ export default function App() {
         onClose={handleClosePlayer} 
         onVideoSelect={handleVideoSelect}
       />
+
+      <AIChatbot />
 
       <footer className="bg-white border-t border-stone-100 py-12 pb-40 px-6">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
