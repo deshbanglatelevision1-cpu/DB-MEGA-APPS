@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { TrendingUp, Sparkles, Loader2, Play, Info, Search, X, RefreshCw, Zap, Share2, User, Facebook, Twitter, MessageCircle, Copy, Link as LinkIcon, ExternalLink } from 'lucide-react';
+import { TrendingUp, Sparkles, Loader2, Play, Info, Search, X, RefreshCw, Zap, Share2, User, Facebook, Twitter, MessageCircle, Copy, Link as LinkIcon, ExternalLink, Eye, ThumbsUp } from 'lucide-react';
 import YouTube, { YouTubeProps } from 'react-youtube';
 import PullToRefresh from 'react-simple-pull-to-refresh';
 import { getTrendingVideos, YouTubeVideo, searchVideos, getShorts, YouTubeResponse } from '../services/youtube';
@@ -66,6 +66,16 @@ function ShortsPlayerItem({ video, isLast, lastVideoElementRef, onShare, onNext,
 
   const onError: YouTubeProps['onError'] = (event) => {
     console.error("Shorts playback error:", event.data);
+  };
+
+  const formatNumber = (numStr?: string) => {
+    if (!numStr) return null;
+    const num = parseInt(numStr);
+    if (isNaN(num)) return null;
+    if (num >= 1000000000) return (num / 1000000000).toFixed(1) + 'B';
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    return num.toString();
   };
 
   const handleEnd = () => {
@@ -211,20 +221,38 @@ function ShortsPlayerItem({ video, isLast, lastVideoElementRef, onShare, onNext,
             {video.title}
           </h3>
           <div className="flex items-center justify-between pointer-events-auto">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-md border border-white/10">
-                <User className="w-5 h-5 text-white" />
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-md border border-white/10">
+                  <User className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex flex-col">
+                  <p className="text-white font-bold text-sm truncate max-w-[150px]">
+                    {video.channelTitle}
+                  </p>
+                  <div className="flex items-center gap-3 text-[10px] text-white/60 font-bold uppercase tracking-wider">
+                    {video.viewCount && (
+                      <div className="flex items-center gap-1">
+                        <Eye className="w-3 h-3" />
+                        <span>{formatNumber(video.viewCount)}</span>
+                      </div>
+                    )}
+                    {video.likeCount && (
+                      <div className="flex items-center gap-1">
+                        <ThumbsUp className="w-3 h-3" />
+                        <span>{formatNumber(video.likeCount)}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
-              <p className="text-white font-bold text-sm truncate max-w-[150px]">
-                {video.channelTitle}
-              </p>
+              <button 
+                onClick={(e) => onShare(e, video)}
+                className="p-4 bg-white/10 hover:bg-white/20 backdrop-blur-xl rounded-2xl text-white transition-all border border-white/10 active:scale-90 pointer-events-auto"
+              >
+                <Share2 className="w-6 h-6" />
+              </button>
             </div>
-            <button 
-              onClick={(e) => onShare(e, video)}
-              className="p-4 bg-white/10 hover:bg-white/20 backdrop-blur-xl rounded-2xl text-white transition-all border border-white/10 active:scale-90"
-            >
-              <Share2 className="w-6 h-6" />
-            </button>
           </div>
         </div>
       </div>

@@ -9,6 +9,8 @@ export interface YouTubeVideo {
   publishedAt: string;
   description: string;
   viewCount?: string;
+  likeCount?: string;
+  commentCount?: string;
   isShort?: boolean;
 }
 
@@ -33,13 +35,25 @@ export async function searchVideos(query: string, pageToken?: string): Promise<Y
     }
 
     const data = await response.json();
-    const videos = data.items.map((item: any) => ({
-      id: item.id.videoId,
+    const items = data.items;
+    if (!items || items.length === 0) return { videos: [] };
+
+    const videoIds = items.map((item: any) => item.id.videoId).join(',');
+    const statsResponse = await fetch(
+      `${BASE_URL}/videos?part=statistics,snippet&id=${videoIds}&key=${YOUTUBE_API_KEY}`
+    );
+    const statsData = await statsResponse.json();
+
+    const videos = statsData.items.map((item: any) => ({
+      id: item.id,
       title: item.snippet.title,
       thumbnail: item.snippet.thumbnails.high.url,
       channelTitle: item.snippet.channelTitle,
       publishedAt: item.snippet.publishedAt,
       description: item.snippet.description,
+      viewCount: item.statistics.viewCount,
+      likeCount: item.statistics.likeCount,
+      commentCount: item.statistics.commentCount,
     }));
 
     return { videos, nextPageToken: data.nextPageToken };
@@ -87,6 +101,8 @@ export async function getTrendingVideos(pageToken?: string, regionCode?: string,
       publishedAt: item.snippet.publishedAt,
       description: item.snippet.description,
       viewCount: item.statistics.viewCount,
+      likeCount: item.statistics.likeCount,
+      commentCount: item.statistics.commentCount,
     }));
 
     return { videos, nextPageToken: data.nextPageToken, region };
@@ -165,13 +181,25 @@ export async function getShorts(pageToken?: string): Promise<YouTubeResponse> {
       return { videos: [] };
     }
 
-    const videos = data.items.map((item: any) => ({
-      id: item.id.videoId,
+    const items = data.items;
+    if (!items || items.length === 0) return { videos: [] };
+
+    const videoIds = items.map((item: any) => item.id.videoId).join(',');
+    const statsResponse = await fetch(
+      `${BASE_URL}/videos?part=statistics,snippet&id=${videoIds}&key=${YOUTUBE_API_KEY}`
+    );
+    const statsData = await statsResponse.json();
+
+    const videos = statsData.items.map((item: any) => ({
+      id: item.id,
       title: item.snippet.title,
       thumbnail: item.snippet.thumbnails.high.url,
       channelTitle: item.snippet.channelTitle,
       publishedAt: item.snippet.publishedAt,
       description: item.snippet.description,
+      viewCount: item.statistics.viewCount,
+      likeCount: item.statistics.likeCount,
+      commentCount: item.statistics.commentCount,
       isShort: true,
     }));
 

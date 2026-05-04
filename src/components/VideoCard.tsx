@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { YouTubeVideo } from '../services/youtube';
-import { Play, Eye, Clock, Share2, Info, X } from 'lucide-react';
+import { Play, Eye, Clock, Share2, Info, X, ThumbsUp, MessageSquare } from 'lucide-react';
 
 interface VideoCardProps {
   video: YouTubeVideo;
@@ -13,12 +13,14 @@ interface VideoCardProps {
 export default function VideoCard({ video, onClick, onShare }: VideoCardProps) {
   const [showInfo, setShowInfo] = useState(false);
 
-  const formatViews = (views?: string) => {
-    if (!views) return null;
-    const num = parseInt(views);
+  const formatNumber = (numStr?: string) => {
+    if (!numStr) return null;
+    const num = parseInt(numStr);
+    if (isNaN(num)) return null;
+    if (num >= 1000000000) return (num / 1000000000).toFixed(1) + 'B';
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
     if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
-    return num;
+    return num.toString();
   };
 
   const handleClick = (e: React.MouseEvent) => {
@@ -54,13 +56,13 @@ export default function VideoCard({ video, onClick, onShare }: VideoCardProps) {
   return (
     <div 
       onClick={handleClick}
-      className="group cursor-pointer bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md active:scale-[0.98] transition-all duration-300 border border-stone-100 relative h-full flex flex-col"
+      className="group cursor-pointer bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:border-emerald-500/30 active:scale-[0.98] transition-all duration-300 border border-stone-100 relative h-full flex flex-col"
     >
       <div className="relative aspect-video overflow-hidden bg-stone-100">
         <img 
           src={video.thumbnail} 
           alt={video.title} 
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
           referrerPolicy="no-referrer"
           loading="lazy"
         />
@@ -108,8 +110,8 @@ export default function VideoCard({ video, onClick, onShare }: VideoCardProps) {
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
-              <p className="text-stone-300 text-xs leading-relaxed whitespace-pre-wrap">
+            <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 mt-2">
+              <p className="text-stone-300 text-xs leading-relaxed md:leading-loose whitespace-pre-wrap">
                 {video.description || 'No description available for this video.'}
               </p>
             </div>
@@ -127,9 +129,21 @@ export default function VideoCard({ video, onClick, onShare }: VideoCardProps) {
             {video.channelTitle}
           </div>
           {video.viewCount && (
-            <div className="flex items-center gap-1 shrink-0">
+            <div className="flex items-center gap-1 shrink-0" title="Views">
               <Eye className="w-3 h-3" />
-              <span>{formatViews(video.viewCount)}</span>
+              <span>{formatNumber(video.viewCount)}</span>
+            </div>
+          )}
+          {video.likeCount && (
+            <div className="flex items-center gap-1 shrink-0" title="Likes">
+              <ThumbsUp className="w-3 h-3" />
+              <span>{formatNumber(video.likeCount)}</span>
+            </div>
+          )}
+          {video.commentCount && (
+            <div className="flex items-center gap-1 shrink-0" title="Comments">
+              <MessageSquare className="w-3 h-3" />
+              <span>{formatNumber(video.commentCount)}</span>
             </div>
           )}
           <div className="flex items-center gap-1 shrink-0">

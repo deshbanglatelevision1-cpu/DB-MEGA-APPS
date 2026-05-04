@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageSquare, X, Send, Bot, User, Loader2, Globe, Sparkles } from 'lucide-react';
+import { MessageSquare, X, Send, Bot, User, Loader2, Globe, Sparkles, Maximize2, Minimize2 } from 'lucide-react';
 import { chatWithAI, ChatMessage } from '../services/aiService';
 import { cn } from '../lib/utils';
 
 export default function AIChatbot() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -43,11 +44,16 @@ export default function AIChatbot() {
     }
   };
 
+  const toggleOpen = () => {
+    setIsOpen(!isOpen);
+    if (isOpen) setIsMaximized(false);
+  };
+
   return (
     <>
       {/* Floating Toggle Button */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={toggleOpen}
         className={cn(
           "fixed bottom-24 right-6 p-4 rounded-full shadow-2xl transition-all duration-500 z-[100] group",
           isOpen 
@@ -67,7 +73,12 @@ export default function AIChatbot() {
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="fixed bottom-32 right-6 w-[90vw] max-w-[400px] h-[60vh] max-h-[600px] bg-white rounded-[32px] shadow-2xl border border-stone-100 flex flex-col overflow-hidden z-[100] animate-in slide-in-from-bottom-8 zoom-in-95 duration-500">
+        <div className={cn(
+          "fixed transition-all duration-500 ease-in-out bg-white rounded-[32px] shadow-2xl border border-stone-100 flex flex-col overflow-hidden z-[100] animate-in slide-in-from-bottom-8 zoom-in-95",
+          isMaximized 
+            ? "inset-4 md:inset-10 max-w-none max-h-none h-auto w-auto" 
+            : "bottom-32 right-6 w-[90vw] max-w-[400px] h-[60vh] max-h-[600px]"
+        )}>
           {/* Header */}
           <div className="p-6 bg-gradient-to-r from-emerald-600 to-teal-600 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -82,12 +93,22 @@ export default function AIChatbot() {
                 </div>
               </div>
             </div>
-            <button 
-              onClick={() => setIsOpen(false)}
-              className="p-2 hover:bg-white/10 rounded-full transition-colors"
-            >
-              <X className="w-5 h-5 text-white" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setIsMaximized(!isMaximized)}
+                className="p-2 hover:bg-white/10 rounded-full transition-colors text-white"
+                title={isMaximized ? "Minimize" : "Maximize"}
+              >
+                {isMaximized ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+              </button>
+              <button 
+                onClick={() => toggleOpen()}
+                className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                title="Close"
+              >
+                <X className="w-5 h-5 text-white" />
+              </button>
+            </div>
           </div>
 
           {/* Messages */}
