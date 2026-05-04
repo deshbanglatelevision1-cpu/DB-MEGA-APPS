@@ -3,6 +3,7 @@ import HomeFeed from './components/HomeFeed';
 import BottomSearchBar from './components/BottomSearchBar';
 import VideoPlayer from './components/VideoPlayer';
 import AIChatbot from './components/AIChatbot';
+import ShareModal from './components/ShareModal';
 import { YouTubeVideo, searchVideos, YOUTUBE_API_KEY } from './services/youtube';
 import { Play, Sparkles, User, Settings, Info, Menu, X, Bell, TrendingUp, Zap } from 'lucide-react';
 import { cn } from './lib/utils';
@@ -13,6 +14,7 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [nextSearchPageToken, setNextSearchPageToken] = useState<string | undefined>(undefined);
   const [activeTab, setActiveTab] = useState<'trending' | 'shorts'>('trending');
+  const [sharingVideo, setSharingVideo] = useState<YouTubeVideo | null>(null);
   const [searchHistory, setSearchHistory] = useState<string[]>(() => {
     const saved = localStorage.getItem('db_media_history');
     return saved ? JSON.parse(saved) : [];
@@ -103,6 +105,14 @@ export default function App() {
     window.history.replaceState({}, '', url);
   }, []);
 
+  const handleShare = useCallback((e: React.MouseEvent | undefined, video: YouTubeVideo) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    setSharingVideo(video);
+  }, []);
+
   return (
     <div className="min-h-screen bg-stone-50 font-sans selection:bg-emerald-100 selection:text-emerald-900 overflow-x-hidden">
       <header className="fixed top-0 left-0 right-0 z-30 bg-white/80 backdrop-blur-2xl border-b border-stone-100 px-6 h-20 flex items-center justify-between">
@@ -159,6 +169,7 @@ export default function App() {
           onLoadMoreSearch={handleLoadMoreSearch}
           nextSearchPageToken={nextSearchPageToken}
           activeTab={activeTab}
+          onShare={handleShare}
         />
       </main>
 
@@ -172,6 +183,12 @@ export default function App() {
         video={selectedVideo} 
         onClose={handleClosePlayer} 
         onVideoSelect={handleVideoSelect}
+        onShare={handleShare}
+      />
+
+      <ShareModal 
+        video={sharingVideo} 
+        onClose={() => setSharingVideo(null)} 
       />
 
       <AIChatbot />

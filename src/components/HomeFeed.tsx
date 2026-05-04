@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { TrendingUp, Sparkles, Loader2, Play, Info, Search, X, RefreshCw, Zap, Share2, User, Facebook, Twitter, MessageCircle, Copy, Link as LinkIcon, ExternalLink, Eye, ThumbsUp } from 'lucide-react';
+import { TrendingUp, Sparkles, Loader2, Play, Info, Search, X, RefreshCw, Zap, Share2, User, Facebook, Twitter, MessageCircle, Copy, Link as LinkIcon, ExternalLink, Eye, ThumbsUp, Linkedin, Mail, Check } from 'lucide-react';
 import YouTube, { YouTubeProps } from 'react-youtube';
 import PullToRefresh from 'react-simple-pull-to-refresh';
 import { getTrendingVideos, YouTubeVideo, searchVideos, getShorts, YouTubeResponse } from '../services/youtube';
@@ -14,6 +14,7 @@ interface HomeFeedProps {
   onLoadMoreSearch: (query: string) => void;
   nextSearchPageToken?: string;
   activeTab: 'trending' | 'shorts';
+  onShare: (e: React.MouseEvent, video: YouTubeVideo) => void;
 }
 
 interface ShortsPlayerItemProps {
@@ -280,7 +281,16 @@ const CATEGORIES = [
   { id: 'documentary', name: 'Documentary' }
 ];
 
-export default function HomeFeed({ onVideoSelect, searchResults, onClearSearch, searchQuery, onLoadMoreSearch, nextSearchPageToken, activeTab }: HomeFeedProps) {
+export default function HomeFeed({ 
+  onVideoSelect, 
+  searchResults, 
+  onClearSearch, 
+  searchQuery, 
+  onLoadMoreSearch, 
+  nextSearchPageToken, 
+  activeTab,
+  onShare 
+}: HomeFeedProps) {
   const [trending, setTrending] = useState<YouTubeVideo[]>([]);
   const [shorts, setShorts] = useState<YouTubeVideo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -291,7 +301,6 @@ export default function HomeFeed({ onVideoSelect, searchResults, onClearSearch, 
   const [activeCategoryId, setActiveCategoryId] = useState('all');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const [showShareModal, setShowShareModal] = useState<YouTubeVideo | null>(null);
   
   const observer = useRef<IntersectionObserver | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -447,43 +456,7 @@ export default function HomeFeed({ onVideoSelect, searchResults, onClearSearch, 
   };
 
   const handleShare = async (e: React.MouseEvent, video: YouTubeVideo) => {
-    e.stopPropagation();
-    setShowShareModal(video);
-  };
-
-  const copyToClipboard = async (video: YouTubeVideo) => {
-    const shareUrl = `${window.location.origin}${window.location.pathname}?v=${video.id}`;
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      setToast('Link copied to clipboard!');
-      setTimeout(() => setToast(null), 3000);
-      setShowShareModal(null);
-    } catch (err) {
-      console.error('Failed to copy:', err);
-    }
-  };
-
-  const shareToSocial = (platform: string, video: YouTubeVideo) => {
-    const shareUrl = encodeURIComponent(`${window.location.origin}${window.location.pathname}?v=${video.id}`);
-    const text = encodeURIComponent(video.title);
-    let url = '';
-    
-    switch (platform) {
-      case 'facebook':
-        url = `https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`;
-        break;
-      case 'twitter':
-        url = `https://twitter.com/intent/tweet?text=${text}&url=${shareUrl}`;
-        break;
-      case 'whatsapp':
-        url = `https://api.whatsapp.com/send?text=${text}%20${shareUrl}`;
-        break;
-    }
-    
-    if (url) {
-      window.open(url, '_blank');
-      setShowShareModal(null);
-    }
+    onShare(e, video);
   };
 
   useEffect(() => {
@@ -729,47 +702,6 @@ export default function HomeFeed({ onVideoSelect, searchResults, onClearSearch, 
         </>
       )}
 
-        {/* Share Modal Overlay */}
-        {showShareModal && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 animate-in fade-in duration-300">
-            <div className="absolute inset-0 bg-stone-900/60 backdrop-blur-xl" onClick={() => setShowShareModal(null)} />
-            <div className="relative w-full max-w-sm bg-white rounded-[40px] shadow-2xl p-8 space-y-8 animate-in zoom-in-95 slide-in-from-bottom-8 duration-500 overflow-hidden">
-               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 via-rose-500 to-emerald-500 animate-gradient-x" />
-               <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-2xl font-black text-stone-900 tracking-tight mb-1">Share Media</h3>
-                  <p className="text-stone-400 text-xs font-bold uppercase tracking-widest">Select Platform</p>
-                </div>
-                <button onClick={() => setShowShareModal(null)} className="p-3 bg-stone-100 hover:bg-rose-50 text-stone-400 hover:text-rose-500 rounded-2xl transition-all">
-                  <X className="w-5 h-5" />
-                </button>
-               </div>
-               <div className="space-y-3">
-                 <button onClick={() => shareToSocial('whatsapp', showShareModal)} className="w-full h-14 bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] rounded-2xl flex items-center gap-4 px-6 font-bold transition-all group">
-                   <MessageCircle className="w-6 h-6 group-hover:scale-110 transition-transform" />
-                   <span>WhatsApp</span>
-                 </button>
-                 <button onClick={() => shareToSocial('facebook', showShareModal)} className="w-full h-14 bg-[#1877F2]/10 hover:bg-[#1877F2]/20 text-[#1877F2] rounded-2xl flex items-center gap-4 px-6 font-bold transition-all group">
-                   <Facebook className="w-6 h-6 group-hover:scale-110 transition-transform" />
-                   <span>Facebook</span>
-                 </button>
-                 <button onClick={() => shareToSocial('twitter', showShareModal)} className="w-full h-14 bg-stone-900/10 hover:bg-stone-900/20 text-stone-900 rounded-2xl flex items-center gap-4 px-6 font-bold transition-all group">
-                   <Twitter className="w-6 h-6 group-hover:scale-110 transition-transform" />
-                   <span>Twitter / X</span>
-                 </button>
-               </div>
-               <div className="pt-4 border-t border-stone-100">
-                 <button onClick={() => copyToClipboard(showShareModal)} className="w-full h-14 bg-stone-100 hover:bg-stone-200 text-stone-900 rounded-2xl flex items-center justify-between px-6 font-bold transition-all group">
-                   <div className="flex items-center gap-4">
-                     <LinkIcon className="w-5 h-5 text-stone-400" />
-                     <span>Copy Video Link</span>
-                   </div>
-                   <Copy className="w-4 h-4 text-stone-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                 </button>
-               </div>
-            </div>
-          </div>
-        )}
       </div>
     </PullToRefresh>
   );

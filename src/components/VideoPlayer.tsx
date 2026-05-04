@@ -9,9 +9,10 @@ interface VideoPlayerProps {
   video: YouTubeVideo | null;
   onClose: () => void;
   onVideoSelect: (video: YouTubeVideo) => void;
+  onShare: (e: React.MouseEvent | undefined, video: YouTubeVideo) => void;
 }
 
-export default function VideoPlayer({ video, onClose, onVideoSelect }: VideoPlayerProps) {
+export default function VideoPlayer({ video, onClose, onVideoSelect, onShare }: VideoPlayerProps) {
   const [relatedVideos, setRelatedVideos] = useState<YouTubeVideo[]>([]);
   const [isLoadingRelated, setIsLoadingRelated] = useState(false);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
@@ -128,15 +129,7 @@ export default function VideoPlayer({ video, onClose, onVideoSelect }: VideoPlay
                 </div>
                 <div className="flex items-center gap-4">
                   <button 
-                    onClick={() => {
-                      const shareUrl = `${window.location.origin}${window.location.pathname}?v=${video.id}`;
-                      if (navigator.share) {
-                        navigator.share({ title: video.title, url: shareUrl }).catch(console.error);
-                      } else {
-                        navigator.clipboard.writeText(shareUrl);
-                        alert('Link copied to clipboard!');
-                      }
-                    }}
+                    onClick={() => onShare(undefined, video)}
                     className="flex items-center gap-2 px-6 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold text-sm transition-all backdrop-blur-md border border-white/5"
                   >
                     <Share2 className="w-4 h-4" />
